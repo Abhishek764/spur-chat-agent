@@ -1,0 +1,20 @@
+node_modules
+.DS_Store
+
+# build output
+.svelte-kit
+build
+.vercel
+
+# env
+.env
+.env.*
+!.env.example
+
+# editor
+.idea
+*.log
+
+# local planning notes / assignment brief (not part of the deliverable)
+memory.md
+*.docx
