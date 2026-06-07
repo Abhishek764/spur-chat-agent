@@ -36,14 +36,17 @@ export async function handleChat({ message, sessionId }: ChatInput): Promise<Cha
 	let degraded = false;
 	try {
 		reply = await generateReply(history, text);
-		await prisma.message.create({
-			data: { conversationId: conversation.id, sender: 'ai', text: reply }
-		});
 	} catch (err) {
 		logLlmError(err);
 		reply = FALLBACK_REPLY;
 		degraded = true;
 	}
+
+	// Persist the agent's turn either way so the conversation reads coherently on
+	// reload — the fallback message stands in for the reply we couldn't generate.
+	await prisma.message.create({
+		data: { conversationId: conversation.id, sender: 'ai', text: reply }
+	});
 
 	return { reply, sessionId: conversation.id, degraded };
 }

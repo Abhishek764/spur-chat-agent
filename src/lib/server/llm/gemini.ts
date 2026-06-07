@@ -9,7 +9,14 @@ export interface ConversationTurn {
 	text: string;
 }
 
-export type LlmErrorKind = 'config' | 'timeout' | 'rate_limit' | 'auth' | 'empty' | 'unknown';
+export type LlmErrorKind =
+	| 'config'
+	| 'timeout'
+	| 'rate_limit'
+	| 'auth'
+	| 'unavailable'
+	| 'empty'
+	| 'unknown';
 
 /** Error thrown by the LLM layer. The chat service maps these to user-facing copy. */
 export class LlmError extends Error {
@@ -28,6 +35,11 @@ const TIMEOUT_MS = 15_000;
 const MAX_OUTPUT_TOKENS = 1024;
 // Cap how much history we replay to the model to keep latency and token cost bounded.
 const MAX_HISTORY_TURNS = 20;
+// Retry transient "model overloaded" responses a couple of times before giving up.
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 400;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 let client: GoogleGenAI | null = null;
 
@@ -59,6 +71,26 @@ export async function generateReply(
 	history: ConversationTurn[],
 	userMessage: string
 ): Promise<string> {
+	const contents = toContents(history, userMessage);
+
+	let lastError: LlmError | undefined;
+	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+		try {
+			return await attemptReply(contents);
+		} catch (err) {
+			lastError = classify(err);
+			if (lastError.kind !== 'unavailable' || attempt === MAX_ATTEMPTS) {
+				throw lastError;
+			}
+			await delay(RETRY_BASE_DELAY_MS * attempt);
+		}
+	}
+
+	// Unreachable: the loop either returns or throws, but satisfies the type checker.
+	throw lastError ?? new LlmError('unknown', 'Unknown LLM error.');
+}
+
+async function attemptReply(contents: Content[]): Promise<string> {
 	const ai = getClient();
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -66,7 +98,7 @@ export async function generateReply(
 	try {
 		const response = await ai.models.generateContent({
 			model: MODEL,
-			contents: toContents(history, userMessage),
+			contents,
 			config: {
 				systemInstruction: buildSystemInstruction(),
 				temperature: 0.3,
@@ -81,8 +113,6 @@ export async function generateReply(
 			throw new LlmError('empty', 'The model returned an empty response.');
 		}
 		return reply;
-	} catch (err) {
-		throw classify(err);
 	} finally {
 		clearTimeout(timer);
 	}
@@ -105,6 +135,14 @@ function classify(err: unknown): LlmError {
 	}
 	if (status === 429 || haystack.includes('rate limit') || haystack.includes('quota')) {
 		return new LlmError('rate_limit', 'The model is rate limited right now.', err);
+	}
+	if (
+		status === 503 ||
+		haystack.includes('unavailable') ||
+		haystack.includes('overloaded') ||
+		haystack.includes('high demand')
+	) {
+		return new LlmError('unavailable', 'The model is temporarily unavailable.', err);
 	}
 	if (status === 401 || status === 403 || haystack.includes('api key') || haystack.includes('permission')) {
 		return new LlmError('auth', 'The model rejected the API credentials.', err);
