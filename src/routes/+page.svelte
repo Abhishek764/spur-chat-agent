@@ -4,6 +4,8 @@
 	const title = 'Nimbus Goods — Support Chat';
 	const description =
 		'Chat with the Nimbus Goods support agent for instant answers about shipping, returns, payments, and order tracking.';
+	const siteUrl = 'https://spur-chat-agent-tau.vercel.app';
+	const ogImage = `${siteUrl}/favicon.svg`;
 </script>
 
 <svelte:head>
@@ -11,20 +13,21 @@
 	<meta name="description" content={description} />
 	<meta name="robots" content="index, follow" />
 	<meta name="theme-color" content="#4f46e5" />
-	<link rel="canonical" href="/" />
+	<link rel="canonical" href={siteUrl} />
 
 	<!-- Open Graph -->
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="Nimbus Goods" />
 	<meta property="og:title" content={title} />
 	<meta property="og:description" content={description} />
-	<meta property="og:image" content="/favicon.svg" />
+	<meta property="og:url" content={siteUrl} />
+	<meta property="og:image" content={ogImage} />
 
 	<!-- Twitter -->
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content={title} />
 	<meta name="twitter:description" content={description} />
-	<meta name="twitter:image" content="/favicon.svg" />
+	<meta name="twitter:image" content={ogImage} />
 </svelte:head>
 
 <main>

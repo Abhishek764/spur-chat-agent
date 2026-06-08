@@ -11,7 +11,7 @@ things that matter when you actually ship: clean layering, a well-encapsulated L
 integration, sensible persistence, and graceful behaviour under bad input and flaky
 upstreams.
 
-- **Live demo:** _deployed on Vercel — add the URL here once the import finishes_
+- **Live demo:** https://spur-chat-agent-tau.vercel.app
 - **Repo:** https://github.com/Abhishek764/spur-chat-agent
 - **Stack:** SvelteKit (Svelte 5) · TypeScript · Prisma · PostgreSQL · Google Gemini
 
