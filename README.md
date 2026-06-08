@@ -488,5 +488,5 @@ docker-compose.yml       local Postgres
 
 ---
 
-Built by [Abhishek](https://github.com/Abhishek764) for the Spur Founding Engineer
+Built by [Abhishek](https://github.com/Abhishek764) for the Spur Software Enginner
 take-home.
