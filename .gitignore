@@ -18,3 +18,6 @@ build
 # local planning notes / assignment brief (not part of the deliverable)
 memory.md
 *.docx
+
+# local tooling config
+.mcp.json
